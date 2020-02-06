@@ -3,15 +3,23 @@
 
 clear,clc,close all
 
+%global maneuver alpha_dot
+alpha_dot = 0;
+
 %temporary input vector
-in = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
+
+u0 = [1.29, -0.1174, 0, 0, -0.0153]; % [T, de, dr, da, AoA]
+
+in = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17];
+
+
 
 % PARSING INPUTS
 %=============================================================
 T   = in(1); %Thrust
 de  = in(2); %Elevator deflection (down is +) {deg}
 drt = in(3); %Rudder deflection {deg}
-dq  = in(4); %Aileron deflection {deg}
+da  = in(4); %Aileron deflection {deg}
 
 V       = in(5);  %Velocity {ft/s}
 gamma   = in(6);  %Flight path angle {rad}
@@ -26,7 +34,7 @@ north   = in(14); %North Position {ft}
 east    = in(15); %East Position {ft}
 h       = in(16); %Altitude {ft}
 
-
+tm = in(17);
 
 % ATMOSPHERIC PROPERTIES
 %=============================================================
