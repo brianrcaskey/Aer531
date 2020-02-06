@@ -1,17 +1,29 @@
 %AerE 531 EOM Function
 %Written on 02/05/2020 by students at Iowa State University
+clear,clc
 
-clear,clc,close all
+%function x_dot = EOM(in)
 
+%global maneuver alpha_dot
+%global alpha_dot;
+alpha_dot = 0;
+x_dot = [];
 %temporary input vector
-in = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
+
+u0 = [1.29, -0.1174, 0,  0, 64.828,     0,  -0.0153, 0,  0,  0,     0, 0,   0,     0,    0, 1119, 100];
+   % [T,     de,    dr, da, V,      gamma,  AoA,     q,  p, mu,  beta, r, chi, north, east,    h, clock-input]
+   
+
+   
+in = u0;
+
 
 % PARSING INPUTS
 %=============================================================
 T   = in(1); %Thrust
 de  = in(2); %Elevator deflection (down is +) {deg}
 drt = in(3); %Rudder deflection {deg}
-dq  = in(4); %Aileron deflection {deg}
+da  = in(4); %Aileron deflection {deg}
 
 V       = in(5);  %Velocity {ft/s}
 gamma   = in(6);  %Flight path angle {rad}
@@ -26,7 +38,7 @@ north   = in(14); %North Position {ft}
 east    = in(15); %East Position {ft}
 h       = in(16); %Altitude {ft}
 
-
+tm = in(17);
 
 % ATMOSPHERIC PROPERTIES
 %=============================================================
@@ -61,7 +73,7 @@ lambda = 0.72955;   %Taper ratio from S = (Cr*(1+lambda)*b)/2
 CLat = 0.76;        %Vert tail coefficient of lift per AoA
 CDmint = 0.002;     %vert tail minimum coeffcient of drag
 Kt = 0.446;         %TO DO - MORE CALC?
-it = deg2rad(2);    %Tail incidence 2 degrees
+it = deg2rad(2);    %Tail incidence 2 degrees to radians
 Te = 0.422;         %Tail control surface effectiveness (??)
 nt = 1;             %??
 St = S;             %Horizontal tail area square feet = ref area (??)
@@ -119,3 +131,80 @@ Mc=Lw*cgw*cos(alpha)+Dw*cgw*sin(alpha)+Mw-Lt*cgt*cos(alpha-E+q*cgt/V)-(Dt+Dvt)*c
 Nc=-qb*nvt*Svt*CLavt*(-beta+Tr*drt+r*cgvt/V)*cgvt+(-qb*S*b*Cnda*da);
 % Roll Moment
 Lc=qb*S*b^2/(2*V)*(Clp*p+2*V/b*Clb*beta+Clr*drt+Clda*da*2*V/b);
+
+
+
+
+% -=-=-=-=-=- NONLINEAR 6-DOF EQUATION OF MOTION (EOMs) -=-=-=-=-=-=-=-=-
+%
+% These are the state derivative equations; the comment names the state,
+% but the equation is for its derivative (rate)
+%
+% The equations are arranged by aircraft mode
+%
+% NOTE: These assume that Ixz=0, if not, then eq's need to be modified
+% Longitudinal (phugoid and short period): V, gamma, q, alpha
+% Phugoid: V, gamma
+ % Velocity
+ V_dot=1/m*(-D*cos(beta)+Y*sin(beta)+T*cos(beta)*cos(alpha))-...
+ g*sin(gamma);
+ % Flight Path Angle
+ gamma_dot=1/(m*V)*(-D*sin(beta)*sin(mu)-Y*sin(mu)*cos(beta)...
+ +L*cos(mu)+T*(cos(mu)*sin(alpha)+sin(mu)*sin(beta)*cos(alpha)))...
+ -g/V*cos(gamma);
+% Short Period: alpha, q
+ % Angle of Attach
+ alpha_dot=q-tan(beta)*(p*cos(alpha)+r*sin(alpha))-1/(m*V*cos(beta))...
+ *(L+T*sin(alpha))+g*cos(gamma)*cos(mu)/(V*cos(beta));
+ % Pitch Rate
+ q_dot=Mc/Iyy+1/Iyy*(Izz*p*r-Ixx*r*p);
+% Lateral (roll) - Directional (yaw): p, mu, beta, r
+% Roll: p, mu
+ % Roll Rate
+ p_dot=Lc/Ixx+1/Ixx*(Iyy*r*q-Izz*q*r);
+
+ % Bank Angle (about velocity vector)
+ mu_dot=1/cos(beta)*(p*cos(alpha)+r*sin(alpha))+1/(m*V)*(D*sin(beta)...
+ *cos(mu)*tan(gamma)+Y*tan(gamma)*cos(mu)*cos(beta)+L*(tan(beta)+...
+ tan(gamma)*sin(mu))+T*(sin(alpha)*tan(gamma)*sin(mu)+sin(alpha)*...
+ tan(beta)-cos(alpha)*tan(gamma)*cos(mu)*sin(beta)))-...
+ g/V*cos(gamma)*cos(mu)*tan(beta);
+
+% Dutch Roll: beta, r
+ % Side Slip Angle
+ beta_dot=-r*cos(alpha)+p*sin(alpha)+1/(m*V)*(D*sin(beta)+Y*cos...
+ (beta)-T*sin(beta)*cos(alpha))+g/V*cos(gamma)*sin(mu);
+
+ % Yaw Rate
+
+ r_dot=Nc/Izz+1/Izz*(Ixx*p*q-Iyy*p*q);
+
+% Heading Angle (from North)
+ chi_dot=1/(m*V*cos(gamma))*(D*sin(beta)*cos(mu)+Y*cos(mu)*cos(beta)...
+ +L*sin(mu)+T*(sin(mu)*sin(alpha)-cos(mu)*sin(beta)*cos(alpha)));
+
+% Kinematic Equations
+ % North Position
+ n_dot=V*cos(gamma)*cos(chi);
+
+ % East Position
+ e_dot=V*cos(gamma)*sin(chi);
+
+ % Altitude
+ h_dot=V*sin(gamma);
+
+% Pack derivatives into output vector x_dot
+ x_dot(1) = V_dot;
+ x_dot(2) = gamma_dot;
+ x_dot(3) = alpha_dot;
+ x_dot(4) = q_dot;
+ x_dot(5) = p_dot;
+ x_dot(6) = mu_dot;
+ x_dot(7) = beta_dot;
+ x_dot(8) = r_dot;
+ x_dot(9) = chi_dot;
+ x_dot(10) = n_dot;
+ x_dot(11) = e_dot;
+ x_dot(12) = h_dot;
+
+%end
