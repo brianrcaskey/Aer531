@@ -1,7 +1,0 @@
-# Aer531
-
-  The MATLAB simulation is currently divided into a main script file and five supporting functions. The executive script, F5MAIN.m, calls the supporting functions. The initial state vector and control vector are definedhere as well. The state vector consists of body-axis velocities, body-axis rates, Euler angles, and inertial positions. The control vector consists of control surface deflections as well as throttle setting. MATLAB’s ode45.m integrates the equations of motion and returns important state information that can be plotted.
-
-  The first supporting function, eqOfMotion.m, contains the twelve equations of motion and returns the state visualization history.  These equations are derived using the assumptions discussed later in the paper. The aerodynamic coefficients for the equations of motion are found in aeroCoeff.m and are expressed inbody axes. Each aerodynamic coefficient is found through linear or bilinear interpolation of tabulated wind tunnel data (found in aeroData.m), using current state and control surface values.
-
-  The direction-cosine matrix  (DCM), which is shown in  Eq. (1), is contained inDCM.m.  This functioncontains the  matrix that relates vectors in the body frame to the inertial, earth-fixed frame. The EarthStandard Atmosphere Model is modeled in atmos.m. This function provides free stream air density, pressure, temperature, and speed of sound at varying altitudes.
