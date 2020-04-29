@@ -23,34 +23,123 @@ rudder = [T1, SS];
 E1 = -0.1174*ones(3000,1);
 elevator = [T1, E1];
 
+roll = zeros(3000,1);
+roll(100:3000) = 5*pi/180;
 
-%% Create LQR Controller
-A_lat = [0         0         0    1.0000         0      0
-         0         0         0         0    1.0000      0
-    0.4967         0   -0.0002   -0.0130   -0.9593      0
-         0         0   -0.0076    0.0035    0.0030      0
-         0         0    0.0010   -0.6571   -0.0002      0
+roll_cmd = [T1, roll];
+
+% Create LQR Controller
+A_lat = [ 0         0         0    1.0000         0 0
+         0         0         0         0    1.0000  0
+    0.4967         0   -0.0002   -0.0130   -0.9593  0
+         0         0   -0.0076    0.0040    0.0030  0
+         0         0    0.0010   -0.6571   -0.0002  0
         -1         0         0         0         0      0];
      
      
 B_lat = [0         0
          0         0
          0    0.3726
-    1.0256    4.6083
-   -0.0541  -28.1956
+    1.0256    4.6310
+   -0.0549  -28.1998
          0         0];
 
 
 
-Q = diag([1,0.001,1,3,1,10]);
+Q = diag([1,0.001,1,2,1,8]);
 
 
 
-max_da = 10;
+max_da =[1:1:10];
+LQR_ail = struct([]);
+LQR_ail_dt = struct([]);
+LQR_rud = struct([]);
+LQR_rud_dt = struct([]);
+LQR_roll_angle = struct([]);
+
+max_dr = 20;
+
+
+
+
+
+
+% for i = 1:length(max_da)
+%     
+%     R = diag([1/(max_da(i)^2), 1/(max_dr^2)]);
+%     k_lqr = lqr(A_lat, B_lat, Q, R)  
+%     sim('AF_SimLQR_V2.slx', 10)
+%     LQR_ail{i} = ans.ail
+%     LQR_ail_dt{i} = ans.ail_dt
+%     LQR_rud{i} = ans.rud
+%     LQR_rud_dt{i} = ans.rud_dt
+%     LQR_roll_angle{i} = ans.roll_angle
+%     
+% end
+% 
+% figure
+% hold on
+% legendCell = strcat('max da =', string(num2cell(max_da)))
+% for i = 1:length(max_da)
+%     
+%    plot(LQR_ail_dt{i}.time(1:13),LQR_ail_dt{i}.data(1:13))
+%     
+% end
+% hold off
+% grid on
+% legend(legendCell)
+% 
+% figure 
+% hold on
+% legendCell = strcat('max da =', string(num2cell(max_da)))
+% 
+% for i = 1:length(max_da)
+%     
+%    plot(LQR_roll_angle{i}) 
+%     
+% end
+% grid on
+% hold off
+% legend(legendCell)
+
+
+%%
+
 max_dr = 30;
+max_da = 10;
+
+Q = diag([0.5,0.0001,0.5,0.5,1,20]);
 R = diag([1/(max_da^2), 1/(max_dr^2)]);
+k_lqr = lqr(A_lat, B_lat, Q, R)  
 
 
+sim('AF_SimLQR_V2.slx',50)
+figure
+subplot(3,1,1)
+hold on
+plot(T1(1:500),roll(1:500)*180/pi)
+plot(ans.roll_angle)
+hold off
+grid on
+legend('Command', 'Roll Angle')
 
-k_lqr = lqr(A_lat, B_lat, Q, R)
+subplot(3,1,2)
+hold on
+grid on
+plot(ans.rud)
+plot(ans.ail)
+hold off
+ylabel('Deflection (deg)')
+xlabel('Time (sec)')
+legend('Aileron','Rudder')
 
+subplot(3,1,3)
+hold on
+grid on
+plot(ans.ail_dt.*pi/180)
+plot(ans.rud_dt.*pi/180)
+legend('Aileron','Rudder')
+ylabel('Actuator speed (rad/sec)')
+xlabel('Time (sec)')
+
+hold off
