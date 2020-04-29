@@ -29,7 +29,7 @@ elevator(1000:1050, 2) = 0;
 elevator(1051:1100, 2) = -0.22;
 
 %% run Simulink model for elevator doublet response
-sim('AF_Sim2',300);
+sim('AF_SimLQR_V2',300);
 figure
 yyaxis left
 time = linspace(1,300,length(ans.Altitude));
@@ -51,7 +51,7 @@ rudder(1000:1020, 2) = 10*pi/179;
 %rudder(1051:1100, 2) = -0.05;
 
 
-sim('AF_Sim2',300);
+% sim('AF_Sim2',300);
 
 figure
 yyaxis left
