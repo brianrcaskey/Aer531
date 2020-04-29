@@ -24,7 +24,7 @@ E1 = -0.1174*ones(3000,1);
 elevator = [T1, E1];
 
 roll = zeros(3000,1);
-roll(100:3000) = 5*pi/180;
+roll(101:3000) = 5*pi/180;
 
 roll_cmd = [T1, roll];
 
@@ -101,23 +101,25 @@ max_dr = 20;
 % grid on
 % hold off
 % legend(legendCell)
-
-
-%%
-
+wc = 0.025;
 max_dr = 30;
 max_da = 10;
 
-Q = diag([0.5,0.0001,0.5,0.5,1,20]);
+Q = diag([1,0.0001,1,1,1,30]);
 R = diag([1/(max_da^2), 1/(max_dr^2)]);
-k_lqr = lqr(A_lat, B_lat, Q, R)  
+k_lqr = lqr(A_lat, B_lat, Q, R) 
 
+%%
 
-sim('AF_SimLQR_V2.slx',50)
+ 
+
+runtime = 50;
+runtime_t = runtime*10;
+sim('AF_SimLQR_V2.slx',runtime)
 figure
 subplot(3,1,1)
 hold on
-plot(T1(1:500),roll(1:500)*180/pi)
+plot(T1(1:runtime_t),roll(1:runtime_t)*180/pi)
 plot(ans.roll_angle)
 hold off
 grid on
