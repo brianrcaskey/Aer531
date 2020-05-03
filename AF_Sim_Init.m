@@ -53,21 +53,23 @@ x0 = [ theta0 V0  alpha0  q0]';
 
 A_long = [...
    0         0         0    1.0000      0 % theta
- -32.2000   -7   13.1983         3      0 % V
-  0.0001   -0.253   -0.2370    1.0000   0 % alpha
+ -32.2000   -48   13.1983         3     0 % V
+  0.0001   -0.0253   -0.2370    1.0000   0 % alpha
     0   -0.0549   -5.5837   -3.7947     0 % q
    -1        0         0         0      0 ]; % Int(theta_cmd - theta)dt
 
 B_long = [...
      0
      0
-     7
+     0.9
    2.9035
      0 ];   
 
+%% LQR setup
+Q = diag([1 0.1 0.1 0.1 1000]);
 
-Q = diag([0.1 0.1 1 10 90]);
-R = 1e-2;
+R = 1e-1;
+
 
 Klqr = lqr(A_long, B_long, Q, R);
 %% LQR Lateral
@@ -146,27 +148,24 @@ control_PIDlong = stepinfo(pitch_LQR,t)
 control_PIDlong = stepinfo(pitch_PID,t)
 
 %% Controller Results
-figure(1)
-subplot(2,1,1)
-plot(T1,pitch_cmd(:,2),'LineWidth',2)
-hold on
+figure('position',[50 50 900 600])
+subplot(2,1,1); hold on ; grid on
+title('Longitudinal Mode Controller Response')
+plot(T1,pitch_cmd(:,2),':K','LineWidth',2)
 % plot(t,oploop_pitch,'LineWidth',2)
-plot(t,pitch_PID,'LineWidth',2)
-plot(t,pitch_LQR,'LineWidth',2)
-grid on
-ylabel('Deflection (deg)')
-xlabel('Time (sec)')
-legend('Command', 'Open Loop Pitch Angle','Pitch Angle - PID','Pitch Angle - LQR')
+plot(t,pitch_PID,'b','LineWidth',2)
+plot(t,pitch_LQR,'r','LineWidth',2)
+ylabel('Deflection (deg)'); xlabel('Time (sec)'); xlim([0 60])
+legend('Command', 'Pitch Angle - PID','Pitch Angle - LQR','location','east')
+set(gca,'fontsize',12)
 
-subplot(2,1,2)
-plot(T1,roll_cmd(:,2),'LineWidth',2)
-hold on
+subplot(2,1,2);hold on ;grid on
+title('Lateral Mode Controller Response')
+plot(T1,roll_cmd(:,2),':K','LineWidth',2)
 % plot(t,oploop_roll,'LineWidth',2)
-plot(t,roll_PID,'LineWidth',2)
-plot(t,roll_LQR,'LineWidth',2)
-grid on
-ylabel('Deflection (deg)')
-xlabel('Time (sec)')
-legend('Command', 'Open Loop Roll Angle','Roll Angle - PID','Roll Angle - LQR')
-
+plot(t,roll_PID,'b','LineWidth',2)
+plot(t,roll_LQR,'r','LineWidth',2)
+ylabel('Deflection (deg)'); xlabel('Time (sec)'); xlim([0 60])
+legend('Command', 'Roll Angle - PID','Roll Angle - LQR','location','east')
+set(gca,'fontsize',12)
 
