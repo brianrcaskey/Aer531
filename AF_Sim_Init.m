@@ -48,6 +48,53 @@ pitch(100:6000) = 2;
 roll_cmd = [T1, roll];%degrees
 pitch_cmd = [T1, pitch];
 
+%% Open Loop
+% % create elevator doublet
+% elevator(1000:1050, 2) = 0;
+% elevator(1051:1100, 2) = -0.22;
+% 
+% % run Simulink model for elevator doublet response
+% sim('AF_Sim2',300);
+% figure
+% yyaxis left
+% time = linspace(1,300,length(ans.Altitude))
+% plot(time,ans.Altitude)
+% ylabel('Altitude (ft)')
+% 
+% yyaxis right
+% plot(T1,(180/pi).*elevator(:,2))
+% ylabel('Elevator Deflection (deg)')
+% grid on
+% title('Longitudinal Response to Elevator Doublet')
+% legend on
+% legend ('Altitude (ft)', 'Elevator Deflection (deg)')
+% hold off
+% 
+% % run Simulink model for rudder input response
+% elevator = [T1, E1]; % reset elevator input matrix
+% rudder(1000:1020, 2) = 10*pi/179;
+% %rudder(1051:1100, 2) = -0.05;
+% 
+% 
+% sim('AF_Sim2',300);
+% 
+% figure
+% yyaxis left
+% time = linspace(1,300,length(ans.HeadingAngle))
+% plot(time,(180/pi)*ans.HeadingAngle)
+% ylabel('Heading Angle (deg)')
+% 
+% yyaxis right
+% plot(time,(180/pi)*ans.BankAngle)
+% hold on
+% plot(T1,(180/pi)*rudder(:,2))
+% ylabel('Bank Angle & Rudder Deflection (deg)')
+% grid on
+% title('Heading and Bank Angle Response to Rudder Input')
+% legend on
+% legend ('Heading Angle (deg)', 'Bank Angle (deg)', 'Rudder Deflection (deg)')
+% hold off
+
 %% LQR Longitudonal
 x0 = [ theta0 V0  alpha0  q0]';
 
@@ -65,7 +112,7 @@ B_long = [...
    2.9035
      0 ];   
 
-%% LQR setup
+% LQR setup
 Q = diag([1 0.1 0.1 0.1 1000]);
 
 R = 1e-1;
@@ -93,16 +140,16 @@ B_lat = [0         0
 
      
 % First plot: STOP at 26 sec
-Q = diag([1,1,1,1,1,1]);
+% Q = diag([1,1,1,1,1,1]);
 
-% Q tune
-Q = diag([1,0.001,1,1,1]);
+% % Q tune
+% Q = diag([1,0.001,1,1,1,1]);
 
-% Third
-Q = diag([1,0.001,1,1,1]);
-wc = 0.025;
-
-% Final plot (tuned):
+% % Third
+% Q = diag([1,0.001,1,1,1,1]);
+% wc = 0.025;
+% 
+% % Final plot (tuned):
 Q = diag([5,0.0001,0.01,2,1.5,500]);
 wc = 0.025;
 
@@ -110,7 +157,7 @@ R = diag([1/(max_da^2), 1/(max_dr^2)]);
 k_lqr = lqr(A_lat, B_lat, Q, R);  
 
 %% Simulation
-tsim = 500;
+tsim = 600;
 out = sim('ControllersComparison.slx',tsim);
 t = out.tout;
 
@@ -137,15 +184,15 @@ roll_LQR = out.yout{14}.Values.Data;
 u_PIDlong = out.yout{3}.Values.Data;
 u_PIDlat = out.yout{7}.Values.Data;
 u_LQRlong = out.yout{11}.Values.Data;
-u_LQRdr = out.yout{16}.Values.Data(:,1);
-u_LQRda = out.yout{15}.Values.Data(:,1);
+u_LQRdr = out.yout{16}.Values.Data(:,2);
+u_LQRda = out.yout{15}.Values.Data(:,2);
 
 % Time History Rate
 du_PIDlong = out.yout{4}.Values.Data;
 du_PIDlat = out.yout{8}.Values.Data;
 du_LQRlong = out.yout{12}.Values.Data;
-du_LQRdr = out.yout{16}.Values.Data(:,2);
-du_LQRda = out.yout{15}.Values.Data(:,2);
+du_LQRdr = out.yout{16}.Values.Data(:,1);
+du_LQRda = out.yout{15}.Values.Data(:,1);
 
 
 % Open Loop Response
@@ -177,6 +224,14 @@ r2d = 180/pi;
 %% Longitudinal PID Results
 [V,gamma,alpha,q,p,mu,beta,r,chi,N,E,alt_PID] = stateparser(PID_Long_States);
 tf = 50; % Change this for plotting time, max is 100
+
+figure('Name','LONG_OPLoop','Position', [100 100 1100 600]); hold on ; grid on
+plot(t,oploop_pitch,'LineWidth',linethic,'DisplayName','Pitch Angle')
+plot(T1,pitch_cmd(:,2),':K','LineWidth',linethic,'DisplayName','Command') 
+legend
+ylabel('Pitch Angle (deg)')
+xlabel('Time (sec)')
+set(gca,'fontsize',12,'fontname','times')
 
 % figure
 figure('Name','LONG_PID_1','Position', [100 100 1100 600])
@@ -301,36 +356,36 @@ set(gca,'fontsize',12,'fontname','times')
 %% Longitudinal LQR Results
 [V,gamma,alpha,q,p,mu,beta,r,chi,N,E,alt_LQR] = stateparser(LQR_Long_States);
 % 
-% figure('Name','LONG_LQR_1','Position', [100 100 1100 600])
-% 
-% subplot(3,1,1); hold on ; grid on
-% plot(T1,pitch_cmd(:,2),'LineWidth',1.0,'DisplayName','Command')
-% title('Longitudinal LQR Control')
-% plot(t,pitch_LQR,'LineWidth',1.0,'DisplayName','Pitch Angle')
-% legend
-% ylabel('Pitch Angle (deg)')
-% xlabel('Time (sec)')
-% set(gca,'fontsize',12,'fontname','times')
-% 
-% subplot(3,1,2); hold on ; grid on
-% plot(t,u_LQRlong-u0(2),'LineWidth',1.0,'DisplayName','Control Input')
-% xlim([0 tf])
-% legend
-% ylabel('Defelction (deg)')
-% xlabel('Time (sec)')
-% set(gca,'fontsize',12,'fontname','times')
-% 
-% subplot(3,1,3); hold on ; grid on
-% plot(t,du_LQRlong,'LineWidth',1.0,'DisplayName','Control Input Rate')
-% legend
-% xlim([0 tf])
-% ylabel('Actuator Speed (deg/sec)')
-% xlabel('Time (sec)')
-% set(gca,'fontsize',12,'fontname','times')
+figure('Name','LONG_LQR_1','Position', [100 100 1100 600])
+
+subplot(3,1,1); hold on ; grid on
+plot(T1,pitch_cmd(:,2),'LineWidth',1.0,'DisplayName','Command')
+title('Longitudinal LQR Control')
+plot(t,pitch_LQR,'LineWidth',1.0,'DisplayName','Pitch Angle')
+legend
+ylabel('Pitch Angle (deg)')
+xlabel('Time (sec)')
+set(gca,'fontsize',12,'fontname','times')
+
+subplot(3,1,2); hold on ; grid on
+plot(t,u_LQRlong-u0(2),'LineWidth',1.0,'DisplayName','Control Input')
+xlim([0 tf])
+legend
+ylabel('Defelction (deg)')
+xlabel('Time (sec)')
+set(gca,'fontsize',12,'fontname','times')
+
+subplot(3,1,3); hold on ; grid on
+plot(t,du_LQRlong,'LineWidth',1.0,'DisplayName','Control Input Rate')
+legend
+xlim([0 tf])
+ylabel('Actuator Speed (deg/sec)')
+xlabel('Time (sec)')
+set(gca,'fontsize',12,'fontname','times')
 
 %% Lateral LQR Results
 [V,gamma,alpha,q,p,mu,beta,r,chi_LQR,N,E,alt] = stateparser(LQR_Lat_States);
-tf = 20; % Change this for plotting time, max is 100
+tf = 30; % Change this for plotting time, max is 100
 
 figure('Name','LAT_LQR_1','Position', [100 100 1100 600]);
 
@@ -371,7 +426,7 @@ plot(t, roll_LQR,'linewidth',linethic)
 plot(T1, roll_cmd(:,2),':k','linewidth',linethic)
 xlim([0 tf])
 % ylim([-0.2 2.2])
-xlabel('Time (sec)'); ylabel('Pitch (deg)');
+xlabel('Time (sec)'); ylabel('Roll (deg)');
 set(gca,'fontsize',12,'fontname','times')
 
 subplot 222; hold on ; grid on 
