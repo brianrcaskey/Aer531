@@ -1,74 +1,172 @@
+%% AerE 531 Final Project Initialization Script
+% AF_Sim_Init.m defines the trim and initial conditions for the 
 
+clear,clc, 
+close all
 
-clear all,clc, close all
-
-% Trim Conditions
-u0 = [1.29, 0, 0,  0];
+%% Trim Conditions
+u0 = [ 1.29  -0.1174  0  0];%[dt de dr da]
+% u0 = [1.29, 0, 0,  0];
 
 % setup initial conditions for state
 IC = [64.828,     0,  -0.0153, 0,  0,  0,     0, 0,   0,     0,    0, 1119];
 
 uin = [0, 0, 0, 0];
-throttle = 0;
 
+% Time array
+T1 = 0.1*[0:899]';
 
-% setup time matrix
-T1 = 0.1*[0:2999]';
-
-% setup trim conditions
-SS = zeros(3000,1);
-thr = zeros(3000,1);
+% Trim conditions arrays
+SS = zeros(900,1);
+thr = 1.29*ones(900,1);
 throttle = [T1, thr];
 aileron = [T1, SS];
 rudder = [T1, SS];
-E1 = -0.1174*ones(3000,1);
+E1 = -0.1174*ones(900,1);
 elevator = [T1, E1];
 
-% create elevator doublet inout
-elevator(1000:1050, 2) = 0;
-elevator(1051:1100, 2) = -0.22;
+%% State Space
 
-%% run Simulink model for elevator doublet response
-sim('AF_SimLQR_V2',300);
-figure
-yyaxis left
-time = linspace(1,300,length(ans.Altitude));
-plot(time,ans.Altitude)
-ylabel('Altitude (ft)')
+% Initial conditions for state
+V0 = IC(1);
+alpha0 = IC(3);
+q0 = IC(4);
+theta0 = 0;
 
-yyaxis right
-plot(T1,(180/pi).*elevator(:,2))
-ylabel('Elevator Deflection (deg)')
-grid on
-title('Longitudinal Response to Elevator Doublet')
-legend on
-legend ('Altitude (ft)', 'Elevator Deflection (deg)')
-hold off
-
-% run Simulink model for rudder input response
-elevator = [T1, E1]; % reset elevator input matrix
-rudder(1000:1020, 2) = 10*pi/179;
-%rudder(1051:1100, 2) = -0.05;
+uin = [0, 0, 0, 0];
 
 
-% sim('AF_Sim2',300);
+% create elevator doublet input
+% elevator(1000:1050, 2) = 0;
+% elevator(1051:1100, 2) = -0.22;
 
-figure
-yyaxis left
-time = linspace(1,300,length(ans.HeadingAngle));
-plot(time,(180/pi)*ans.HeadingAngle)
-ylabel('Heading Angle (deg)')
+roll = zeros(900,1);
+roll(100:900) = 5;
+pitch = zeros(900,1);
+pitch(100:900) = 2;
 
-yyaxis right
-plot(time,(180/pi)*ans.BankAngle)
+roll_cmd = [T1, roll];%degrees
+pitch_cmd = [T1, pitch];
+
+%% LQR Longitudonal
+x0 = [ theta0 V0  alpha0  q0]';
+
+A_long = [...
+   0         0         0    1.0000      0 % theta
+ -32.2000   -7   13.1983         3      0 % V
+  0.0001   -0.253   -0.2370    1.0000   0 % alpha
+    0   -0.0549   -5.5837   -3.7947     0 % q
+   -1        0         0         0      0 ]; % Int(theta_cmd - theta)dt
+
+B_long = [...
+     0
+     0
+     7
+   2.9035
+     0 ];   
+
+
+Q = diag([0.1 0.1 1 10 90]);
+R = 1e-2;
+
+Klqr = lqr(A_long, B_long, Q, R);
+%% LQR Lateral
+max_dr = 30;
+max_da = 10;
+
+A_lat = [ 0        0         0    1.0000         0  0
+         0         0         0         0    1.0000  0
+    0.4967         0   -0.0002   -0.0130   -0.9593  0
+         0         0   -0.0076    0.0040    0.0030  0
+         0         0    0.0010   -0.6571   -0.0002  0
+        -1         0         0         0         0  0];
+     
+     
+B_lat = [0         0
+         0         0
+         0    0.3726
+    1.0256    4.6310
+   -0.0549  -28.1998
+         0         0];
+
+wc = 0.025;
+Q = diag([0.5,0.0001,0.5,0.5,1,20]);
+R = diag([1/(max_da^2), 1/(max_dr^2)]);
+k_lqr = lqr(A_lat, B_lat, Q, R);  
+
+%% Simulation
+tsim = 90;
+out = sim('ControllersComparison.slx',tsim);
+t = out.tout;
+
+
+%% Parsing
+% States
+PID_Long_States = out.yout{1}.Values.Data;
+PiD_Lat_States = out.yout{5}.Values.Data;
+LQR_Long_States = out.yout{9}.Values.Data;
+LQR_Lat_States = out.yout{13}.Values.Data;
+
+% Commands
+% pitch_cmd = out.yout{17}.Values.Data;
+% roll_cmd = out.yout{18}.Values.Data;
+
+% Responses
+pitch_PID = out.yout{2}.Values.Data;
+pitch_LQR = out.yout{10}.Values.Data;
+roll_PID = out.yout{6}.Values.Data;
+roll_LQR = out.yout{14}.Values.Data;
+
+% Controller
+% Time History Input
+u_PIDlong = out.yout{3}.Values.Data;
+u_PIDlat = out.yout{7}.Values.Data;
+u_LQRlong = out.yout{11}.Values.Data;
+u_LQRdr = out.yout{16}.Values.Data(:,1);
+u_LQRda = out.yout{15}.Values.Data(:,1);
+
+% Time History Rate
+du_PIDlong = out.yout{4}.Values;
+du_PIDlat = out.yout{8}.Values;
+du_LQRlong = out.yout{12}.Values.Data;
+du_LQRdr = out.yout{16}.Values.Data(:,2);
+du_LQRda = out.yout{15}.Values.Data(:,2);
+
+
+% Open Loop Response
+Long_response = out.yout{17}.Values.Data;
+Lat_response = out.yout{19}.Values.Data;
+oploop_pitch = out.yout{18}.Values.Data;
+oploop_roll = out.yout{20}.Values.Data;
+
+%% Comparisons
+control_PIDlong = stepinfo(pitch_PID,t)
+control_PIDlat = stepinfo(roll_PID,t)
+control_PIDlong = stepinfo(pitch_LQR,t)
+control_PIDlong = stepinfo(pitch_PID,t)
+
+%% Controller Results
+figure(1)
+subplot(2,1,1)
+plot(T1,pitch_cmd(:,2),'LineWidth',2)
 hold on
-plot(T1,(180/pi)*rudder(:,2))
-ylabel('Bank Angle & Rudder Deflection (deg)')
+% plot(t,oploop_pitch,'LineWidth',2)
+plot(t,pitch_PID,'LineWidth',2)
+plot(t,pitch_LQR,'LineWidth',2)
 grid on
-title('Heading and Bank Angle Response to Rudder Input')
-legend on
-legend ('Heading Angle (deg)', 'Bank Angle (deg)', 'Rudder Deflection (deg)')
-hold off
+ylabel('Deflection (deg)')
+xlabel('Time (sec)')
+legend('Command', 'Open Loop Pitch Angle','Pitch Angle - PID','Pitch Angle - LQR')
 
-%[V_dot, gamma_dot, alpha_dot, q_dot, p_dot, mu_dot, beta_dot, r_dot, chi_dot, n_dot, e_dot, h_dot] = EOM(u0);
+subplot(2,1,2)
+plot(T1,roll_cmd(:,2),'LineWidth',2)
+hold on
+% plot(t,oploop_roll,'LineWidth',2)
+plot(t,roll_PID,'LineWidth',2)
+plot(t,roll_LQR,'LineWidth',2)
+grid on
+ylabel('Deflection (deg)')
+xlabel('Time (sec)')
+legend('Command', 'Open Loop Roll Angle','Roll Angle - PID','Roll Angle - LQR')
+
 
