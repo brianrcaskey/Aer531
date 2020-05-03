@@ -175,7 +175,7 @@ linethic = 2.0;
 r2d = 180/pi;
 
 %% Longitudinal PID Results
-[V,gamma,alpha,q,p,mu,beta,r,chi,N,E,alt] = stateparser(PID_Long_States);
+[V,gamma,alpha,q,p,mu,beta,r,chi,N,E,alt_PID] = stateparser(PID_Long_States);
 tf = 50; % Change this for plotting time, max is 100
 
 % figure
@@ -185,7 +185,6 @@ subplot(3,1,1); hold on ; grid on
 plot(t,pitch_PID,'LineWidth',linethic,'DisplayName','Pitch Angle')
 plot(T1,pitch_cmd(:,2),':K','LineWidth',linethic,'DisplayName','Command')
 xlim([0 tf])
-title('Longitudinal PID Control')
 legend
 ylabel('Pitch Angle (deg)')
 xlabel('Time (sec)')
@@ -220,7 +219,7 @@ xlabel('Time (sec)'); ylabel('Pitch (deg)');
 set(gca,'fontsize',12,'fontname','times')
 
 subplot 222; hold on ; grid on 
-plot(t, alt,'linewidth',linethic)
+plot(t, alt_PID,'linewidth',linethic)
 xlim([0 tf])
 xlabel('Time (sec)'); ylabel('Altitude (ft)');
 set(gca,'fontsize',12,'fontname','times')
@@ -240,14 +239,13 @@ set(gca,'fontsize',12,'fontname','times')
 
 
 %% Lateral PID Results
-[V,gamma,alpha,q,p,mu,beta,r,chi,N,E,alt] = stateparser(PID_Lat_States);
+[V,gamma,alpha,q,p,mu,beta,r,chi_PID,N,E,alt] = stateparser(PID_Lat_States);
 tf = 20; % Change this for plotting time, max is 100
 
 figure('Name','LAT_PID_1', 'Position', [100 100 1100 600])
 
 subplot(3,1,1); hold on ; grid on 
 plot(T1,roll_cmd(:,2),':K','LineWidth',1.0,'DisplayName','Command')
-title('Lateral PID Control')
 plot(t,roll_PID,'LineWidth',linethic,'DisplayName','Roll Angle')
 legend
 ylabel('Roll Angle (deg)')
@@ -276,14 +274,13 @@ figure('Name','LAT_PID_2','position',[50 50 1000 600])
 subplot 221; hold on ; grid on 
 plot(t, roll_PID,'linewidth',2)
 plot(T1, roll_cmd(:,2),':k','linewidth',linethic)
-title('Lateral PID Control')
 xlim([0 tf])
 % ylim([-0.2 2.2])
 xlabel('Time (sec)'); ylabel('Pitch (deg)');
 set(gca,'fontsize',12,'fontname','times')
 
 subplot 222; hold on ; grid on 
-plot(t, chi,'linewidth',linethic)
+plot(t, chi_PID,'linewidth',linethic)
 xlim([0 t(end)])
 xlabel('Time (sec)'); ylabel('Heading Angle (deg)');
 set(gca,'fontsize',12,'fontname','times')
@@ -302,7 +299,7 @@ ylabel('Actuator speed (deg/sec)')
 set(gca,'fontsize',12,'fontname','times')
 
 %% Longitudinal LQR Results
-% [V,gamma,alpha,q,p,mu,beta,r,chi,N,E,alt] = stateparser(LQR_Long_States);
+[V,gamma,alpha,q,p,mu,beta,r,chi,N,E,alt_LQR] = stateparser(LQR_Long_States);
 % 
 % figure('Name','LONG_LQR_1','Position', [100 100 1100 600])
 % 
@@ -332,7 +329,7 @@ set(gca,'fontsize',12,'fontname','times')
 % set(gca,'fontsize',12,'fontname','times')
 
 %% Lateral LQR Results
-[V,gamma,alpha,q,p,mu,beta,r,chi,N,E,alt] = stateparser(LQR_Lat_States);
+[V,gamma,alpha,q,p,mu,beta,r,chi_LQR,N,E,alt] = stateparser(LQR_Lat_States);
 tf = 20; % Change this for plotting time, max is 100
 
 figure('Name','LAT_LQR_1','Position', [100 100 1100 600]);
@@ -378,7 +375,7 @@ xlabel('Time (sec)'); ylabel('Pitch (deg)');
 set(gca,'fontsize',12,'fontname','times')
 
 subplot 222; hold on ; grid on 
-plot(t, chi,'linewidth',linethic)
+plot(t, chi_LQR,'linewidth',linethic)
 xlim([0 t(end)])
 xlabel('Time (sec)'); ylabel('Heading Angle (deg)');
 set(gca,'fontsize',12,'fontname','times')
@@ -418,6 +415,23 @@ plot(t,roll_PID,'b','LineWidth',2)
 plot(t,roll_LQR,'r','LineWidth',2)
 ylabel('Roll angle (deg)'); xlabel('Time (sec)'); xlim([0 60])
 legend('Command', 'PID','LQR','location','east')
+set(gca,'fontsize',12,'fontname','times')
+
+figure('Name','State_Comp','position',[50 50 900 600])
+
+subplot(2,1,1); hold on ; grid on
+plot(t,alt_PID,'b','LineWidth',2)
+plot(t,alt_LQR,'r','LineWidth',2)
+ylabel('Altitude (ft)'); xlabel('Time (sec)'); xlim([0 40])
+legend('PID','LQR','location','east')
+set(gca,'fontsize',12,'fontname','times')
+
+subplot(2,1,2);hold on ;grid on
+% title('Heading Angle')
+plot(t,chi_PID,'b','LineWidth',2)
+plot(t,chi_LQR,'r','LineWidth',2)
+ylabel('Heading Angle (deg)'); xlabel('Time (sec)'); 
+legend('PID','LQR','location','east')
 set(gca,'fontsize',12,'fontname','times')
 
 
