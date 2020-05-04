@@ -116,7 +116,9 @@ B_long = [...
 Q = diag([1 0.1 0.1 0.1 1000]);
 
 R = 1e-1;
-
+% Q = diag([0.1 0.1 1 10 100]);
+% 
+% R = 1e-2;
 
 Klqr = lqr(A_long, B_long, Q, R);
 %% LQR Lateral
